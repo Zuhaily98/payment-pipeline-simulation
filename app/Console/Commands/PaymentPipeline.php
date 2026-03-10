@@ -194,8 +194,8 @@ class PaymentPipeline extends Command
             $cleaned[] = $token;
         }
 
-        // first token is the command, rest are arguments
-        $command = strtoupper($cleaned[0]);
+        // first token is the command (case-sensitive)
+        $command = $cleaned[0];
         $args = array_slice($cleaned, 1);
 
         // check argument count is correct for this command
