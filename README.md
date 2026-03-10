@@ -10,7 +10,6 @@ A command-line app built with Laravel that simulates a payment processing pipeli
 
 - PHP 8.2 or higher
 - Composer
-- BCMath PHP extension (usually included by default)
 
 ### Installation
 
