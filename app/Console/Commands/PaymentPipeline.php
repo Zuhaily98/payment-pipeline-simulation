@@ -137,7 +137,9 @@ class PaymentPipeline extends Command
                 default      => "ERROR: Unknown command '{$command}'",
             };
 
-            $this->line($output);
+            foreach (explode("\n", $output) as $outputLine) {
+                $this->line($outputLine);
+            }
             return $output;
 
         } catch (\Exception $e) {
@@ -500,7 +502,7 @@ class PaymentPipeline extends Command
                 'timestamp' => date('Y-m-d H:i:s'),
             ];
 
-            return "OK: Payment {$paymentId} partially refunded {$refundAmount}. Remaining: {$newRemaining} {$payment->currency}";
+            return "OK: Payment {$paymentId} partially refunded {$refundAmount}\nRemaining: {$newRemaining} {$payment->currency}";
         }
 
         // --- full refund path ---
@@ -590,12 +592,12 @@ class PaymentPipeline extends Command
 
         // add void reason if payment was voided
         if ($payment->voidReason) {
-            $output .= " void_reason={$payment->voidReason}";
+            $output .= "\nvoid_reason={$payment->voidReason}";
         }
 
         // add refund info if any refunds were made
         if (bccomp($payment->refundedAmount, '0.00', 2) > 0) {
-            $output .= " refunded={$payment->refundedAmount} remaining={$payment->getRemainingAmount()}";
+            $output .= "\nrefunded={$payment->refundedAmount} remaining={$payment->getRemainingAmount()}";
         }
 
         return $output;
@@ -613,25 +615,14 @@ class PaymentPipeline extends Command
         }
 
         $lines = [];
+        $lines[] = '--- Payment List ---';
 
-        // header
-        $lines[] = str_pad('PAYMENT_ID', 15)
-                 . str_pad('STATE', 25)
-                 . str_pad('AMOUNT', 12)
-                 . str_pad('CURRENCY', 10)
-                 . 'MERCHANT';
-        $lines[] = str_repeat('-', 70);
-
-        // rows
         foreach ($this->payments as $p) {
-            $lines[] = str_pad($p->paymentId, 15)
-                     . str_pad($p->state, 25)
-                     . str_pad($p->amount, 12)
-                     . str_pad($p->currency, 10)
-                     . $p->merchantId;
+            $lines[] = "{$p->paymentId}";
+            $lines[] = "  {$p->state} {$p->amount} {$p->currency} {$p->merchantId}";
         }
 
-        $lines[] = '--- Total: ' . count($this->payments) . ' payment(s) ---';
+        $lines[] = 'Total: ' . count($this->payments);
 
         return implode("\n", $lines);
     }
