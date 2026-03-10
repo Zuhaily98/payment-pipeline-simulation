@@ -205,6 +205,46 @@ class PaymentPipelineTest extends TestCase
             ->expectsOutputToContain('P3003 SETTLED');
     }
 
+    /**
+     * CREATE conflict: same payment_id but different attributes.
+     *
+     * First CREATE succeeds. Second CREATE has different amount.
+     * Existing payment should be marked FAILED, second CREATE rejected.
+     */
+    public function test_create_conflict_marks_existing_as_failed(): void
+    {
+        $file = $this->makeFile([
+            'CREATE P3004 10.00 MYR M01',
+            'CREATE P3004 99.00 MYR M01',       // different amount
+            'STATUS P3004',
+        ]);
+
+        $this->artisan('payment:pipeline', ['--file' => $file])
+            ->assertExitCode(0)
+            ->expectsOutputToContain('Marked as FAILED')
+            ->expectsOutputToContain('P3004 FAILED 10.00 MYR M01');
+    }
+
+    /**
+     * REFUND on a REFUNDED payment must be rejected.
+     */
+    public function test_refund_after_refund_rejected(): void
+    {
+        $file = $this->makeFile([
+            'CREATE P3005 50.00 MYR M01',
+            'AUTHORIZE P3005',
+            'CAPTURE P3005',
+            'REFUND P3005',
+            'REFUND P3005',                      // already REFUNDED
+            'STATUS P3005',
+        ]);
+
+        $this->artisan('payment:pipeline', ['--file' => $file])
+            ->assertExitCode(0)
+            ->expectsOutputToContain('Cannot REFUND')
+            ->expectsOutputToContain('P3005 REFUNDED');
+    }
+
     // 4. PARSER BEHAVIOR (integration level)
 
     /**
